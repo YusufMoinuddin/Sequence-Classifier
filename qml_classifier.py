@@ -28,7 +28,7 @@ N_LAYERS    = 2      # number of ansatz repetition layers (more = more expressiv
 N_EPOCHS    = 30     # number of training epochs
 BATCH_SIZE  = 32     # samples per gradient update
 LR          = 0.01   # learning rate for Adam optimizer
-SHOTS       = 256   # number of circuit measurement shots (higher = less noise, slower)
+SHOTS       = 256    # number of circuit measurement shots (higher = less noise, slower)
 
 TRAIN_PATH  = "data/deep_enzymology_qmproxy_train.csv"
 VAL_PATH    = "data/deep_enzymology_qmproxy_val.csv"
@@ -191,20 +191,27 @@ criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)  # handles class imbalan
 
 
 # ─────────────────────────────────────────────
-# STEP 5: TRAINING LOOP
+# STEP 5: TRAINING LOOP  (replace existing)
 # ─────────────────────────────────────────────
-
+ 
+CHECKPOINT_PATH = "best_vqc_checkpoint.pt"
+ 
 print(f"\nTraining VQC for {N_EPOCHS} epochs...")
 print(f"  Config: {N_QUBITS} qubits | {N_LAYERS} layers | lr={LR} | batch={BATCH_SIZE}")
-print("-" * 55)
-
-train_losses = []
+print(f"  Best checkpoint will be saved to: {CHECKPOINT_PATH}")
+print("-" * 60)
+ 
+train_losses   = []
+val_losses     = []
 val_accuracies = []
-
+ 
+best_val_loss  = float("inf")
+best_epoch     = -1
+ 
 for epoch in range(N_EPOCHS):
+    # ── Training ──
     model.train()
     epoch_loss = 0.0
-
     for X_batch, y_batch in train_loader:
         optimizer.zero_grad()
         logits = model(X_batch)
@@ -212,24 +219,50 @@ for epoch in range(N_EPOCHS):
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item() * X_batch.size(0)
-
     epoch_loss /= len(train_loader.dataset)
     train_losses.append(epoch_loss)
-
-    # Validation accuracy
+ 
+    # ── Validation ──
     model.eval()
     with torch.no_grad():
         val_logits = model(X_val)
+        val_loss   = criterion(val_logits, y_val).item()
         val_preds  = (torch.sigmoid(val_logits) >= 0.5).float()
         val_acc    = accuracy_score(y_val.numpy(), val_preds.numpy())
+ 
+    val_losses.append(val_loss)
     val_accuracies.append(val_acc)
-
-    print(f"  Epoch {epoch+1:02d}/{N_EPOCHS} | Loss: {epoch_loss:.4f} | Val Acc: {val_acc:.4f}")
-
-print("-" * 55)
-print("Training complete.")
-
-
+ 
+    # ── Checkpoint ──
+    is_best = val_loss < best_val_loss
+    if is_best:
+        best_val_loss = val_loss
+        best_epoch    = epoch + 1
+        torch.save({
+            "epoch":            epoch + 1,
+            "model_state_dict": model.state_dict(),
+            "val_loss":         val_loss,
+            "val_acc":          val_acc,
+            "config": {
+                "n_qubits": N_QUBITS,
+                "n_layers": N_LAYERS,
+                "shots":    SHOTS,
+                "lr":       LR,
+                "batch":    BATCH_SIZE,
+            }
+        }, CHECKPOINT_PATH)
+ 
+    marker = " ★ (new best)" if is_best else ""
+    print(f"  Epoch {epoch+1:02d}/{N_EPOCHS} | "
+          f"Train Loss: {epoch_loss:.4f} | "
+          f"Val Loss: {val_loss:.4f} | "
+          f"Val Acc: {val_acc:.4f}{marker}")
+ 
+print("-" * 60)
+print(f"Training complete. Best checkpoint: epoch {best_epoch} "
+      f"(val loss = {best_val_loss:.4f})")
+print(f"Saved to: {CHECKPOINT_PATH}")
+ 
 # ─────────────────────────────────────────────
 # STEP 6: ML METRICS ON TEST SET
 # ─────────────────────────────────────────────

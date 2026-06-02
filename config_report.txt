@@ -1,0 +1,159 @@
+======================================================================
+  VQC CLASSIFIER — FULL CONFIGURATION REPORT
+  Generated: 2026-05-28 17:45:41
+======================================================================
+
+1. DATASET
+──────────────────────────────────────────────────────────────────────
+  Source          : Gao et al. (2020), Nature Communications
+                    Deep enzymology dataset for DNMT3A and DNMT3B
+                    sequence preference profiling
+  Task            : Binary classification — DNMT3A (0) vs DNMT3B (1)
+  Sequence type   : 8-mer DNA sequences (CpG-containing)
+  Label assignment: Read-count frequency ratio across experimental
+                    conditions with minimum-count filter
+                    (ratio-based, not naive file-membership)
+
+  Split           Total    DNMT3A(0)   DNMT3B(1)   Ratio(A:B)   %DNMT3B
+  ─────────────────────────────────────────────────────────────────
+  Train           1652        1394         258       5.40:1     15.6%
+  Val              206         174          32       5.44:1     15.5%
+  Test             207         174          33       5.27:1     15.9%
+  Total           2065        1742         323       5.39:1     15.6%
+
+  Split strategy  : Stratified 80/10/10
+                    Max class-ratio deviation across splits: 2.2%
+  Data leakage    : None — zero sequence overlap between any two splits
+                    (verified by exact string matching across all pairs)
+  Internal dupes  : None — no duplicate sequences within any split
+  CSV columns     : ['sequence', 'meth_A', 'meth_B', 'total', 'label', 'label_str', 'key', 'qmproxy_smiles', 'qmproxy_charge_used', 'qmproxy_multiplicity_used', 'nuclear repulsion energy', 'scf total energy', 'maximum gradient', 'rms gradient', 'qmproxy_error']
+
+2. PREPROCESSING
+──────────────────────────────────────────────────────────────────────
+  Encoding        : Angle encoding — each nucleotide mapped to a
+                    rotation angle in [0, π]
+                    A→0, T→1, G→2, C→3  (then × π/3)
+                    Result: 8 angles per sequence
+
+  Circuit input   : Only the first 4 of 8 encoded angles are
+                    passed to the quantum circuit (positions N1–N4).
+                    Positions N5–N8 are encoded but not used.
+                    This is a current architectural limitation — noted
+                    as future work (extend to 8 qubits).
+
+  Normalisation   : None beyond the π/3 scaling above.
+                    Angles are naturally bounded in [0, π] by construction.
+  Class weighting : BCEWithLogitsLoss with pos_weight = 5.3932
+                    (computed as n_DNMT3A / n_DNMT3B on training set)
+                    Ablation with pos_weight=1.0 also performed (item 4).
+
+3. MODEL ARCHITECTURE
+──────────────────────────────────────────────────────────────────────
+  Model type      : Variational Quantum Classifier (VQC)
+  Backend         : Qiskit Aer (CPU simulation via PennyLane-Qiskit bridge)
+  Qubits          : 4
+  Ansatz layers   : 2
+  Shots           : 256 (measurement samples per circuit evaluation)
+
+  Circuit structure (per forward pass):
+    1. Encoding layer:
+       RY(angle_i) on qubit i, for i in 0..3
+       (embeds nucleotide angles into qubit states)
+    2. Ansatz (repeated 2×):
+       RX(w), RY(w), RZ(w) on each qubit  [12 params/layer]
+       CNOT(i → i+1) for i in 0..2  (chain entanglement)
+       CNOT(3 → 0)  (ring closure)
+    3. Measurement:
+       ⟨Z⟩ on qubit 0  →  scalar in [-1, +1]
+    4. Classical post-processing:
+       nn.Linear(1, 1)  →  logit  →  BCEWithLogitsLoss
+
+  Trainable parameters:
+    VQC weights : 2 layers × 4 qubits × 3 rotations = 24
+    Linear layer: weight + bias = 2
+    Total       : 26
+
+  Gate count (representative circuit):
+    Encoding : 4 RY gates
+    Ansatz   : 2 × (12 rotation + 4 CNOT) = 32 gates
+    Total    : 36 gates (excl. measurement)
+
+  Entanglement topology: Ring (nearest-neighbour chain + wrap-around)
+
+4. TRAINING CONFIGURATION
+──────────────────────────────────────────────────────────────────────
+  Optimizer       : Adam
+  Learning rate   : 0.01
+  Batch size      : 32
+  Epochs          : 30
+  Loss function   : BCEWithLogitsLoss (pos_weight=5.3932)
+  Checkpointing   : Best validation-loss checkpoint saved per run
+                    (final-epoch weights NOT used for evaluation)
+  Shuffle         : Training set shuffled each epoch
+                    (seeded via torch.Generator for reproducibility)
+
+5. EVALUATION PROTOCOL
+──────────────────────────────────────────────────────────────────────
+  Decision threshold : 0.5 (sigmoid output)
+  Primary metrics    : ROC-AUC, PR-AUC, F1 (DNMT3B), Balanced Accuracy
+  Secondary metrics  : Accuracy, Precision (DNMT3B), Recall (DNMT3B),
+                       F1 (Macro), Confusion Matrix
+  Multi-seed eval    : 5 seeds [0, 1, 2, 3, 4]
+                       Results reported as mean ± std
+  Ablations          : (a) pos_weight=1.0 vs 5.39
+                       (b) Shuffled training labels
+                       (c) Random input features
+                       (d) Inference-time position masking (N1–N4)
+
+6. REPRODUCIBILITY
+──────────────────────────────────────────────────────────────────────
+  Random seeds    : [0, 1, 2, 3, 4]
+  Seeded          : random, numpy, torch (per run)
+  NOT seeded      : Qiskit Aer shot noise (intentional — real variance)
+  Hardware        : Apple Silicon (arm64), CPU-only
+                    No GPU acceleration
+  OS              : Darwin 22.3.0
+  Architecture    : arm64
+
+7. SOFTWARE VERSIONS
+──────────────────────────────────────────────────────────────────────
+  Python               : 3.9.6
+  PyTorch              : 2.8.0
+  PennyLane            : 0.38.0
+  pennylane_qiskit     : 0.41.0.post0
+  Qiskit               : 1.2.4
+  qiskit_aer           : 0.16.0
+  NumPy                : 1.26.4
+  Pandas               : 2.3.3
+  scikit-learn         : 1.6.1
+  Matplotlib           : 3.9.4
+
+8. EXACT COMMANDS USED
+──────────────────────────────────────────────────────────────────────
+  # Activate environment
+  source .venv/bin/activate
+
+  # Step 1 — Data integrity audit
+  python data_integrity_audit.py
+
+  # Step 2 — Main training run (with best-checkpoint saving)
+  python qml_classifier.py
+
+  # Step 3 — Full metrics evaluation (loads best checkpoint)
+  python evaluate_metrics.py
+
+  # Step 4 — Multi-seed evaluation (5 seeds)
+  python multi_seed_eval.py
+
+  # Step 5 — pos_weight ablation (weighted vs unweighted, 5 seeds each)
+  python posweight_ablation.py
+
+  # Step 6 — Sanity checks
+  python sanity_checks.py
+
+  # Step 7 — This report
+  python generate_config_report.py
+
+======================================================================
+  END OF CONFIGURATION REPORT
+======================================================================
