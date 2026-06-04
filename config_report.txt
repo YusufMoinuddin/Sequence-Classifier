@@ -1,6 +1,6 @@
 ======================================================================
   VQC CLASSIFIER — FULL CONFIGURATION REPORT
-  Generated: 2026-05-28 17:45:41
+  Generated: 2026-06-04 16:11:03
 ======================================================================
 
 1. DATASET
@@ -112,21 +112,21 @@
   NOT seeded      : Qiskit Aer shot noise (intentional — real variance)
   Hardware        : Apple Silicon (arm64), CPU-only
                     No GPU acceleration
-  OS              : Darwin 22.3.0
-  Architecture    : arm64
+  OS              : Linux 6.8.0-1046-nvidia
+  Architecture    : x86_64
 
 7. SOFTWARE VERSIONS
 ──────────────────────────────────────────────────────────────────────
-  Python               : 3.9.6
-  PyTorch              : 2.8.0
-  PennyLane            : 0.38.0
-  pennylane_qiskit     : 0.41.0.post0
-  Qiskit               : 1.2.4
-  qiskit_aer           : 0.16.0
-  NumPy                : 1.26.4
+  Python               : 3.10.12
+  PyTorch              : 2.12.0+cu130
+  PennyLane            : 0.42.3
+  pennylane_qiskit     : not installed
+  Qiskit               : not installed
+  qiskit_aer           : not installed
+  NumPy                : 2.2.6
   Pandas               : 2.3.3
-  scikit-learn         : 1.6.1
-  Matplotlib           : 3.9.4
+  scikit-learn         : 1.7.2
+  Matplotlib           : 3.10.9
 
 8. EXACT COMMANDS USED
 ──────────────────────────────────────────────────────────────────────
