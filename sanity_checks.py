@@ -30,7 +30,7 @@ from sklearn.metrics import (
 # ─────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────
-SMOKE_TEST = True   # ← flip to False for real run
+SMOKE_TEST = False   # ← flip to False for real run
 
 SEED       = 0
 N_QUBITS   = 4
@@ -83,7 +83,7 @@ maj_baseline   = (y_true == 0).mean()
 # QUANTUM DEVICE — built ONCE
 # ─────────────────────────────────────────────
 print(f"Initializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
-dev = qml.device("qiskit.aer", wires=N_QUBITS, shots=SHOTS)
+dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
 
 def quantum_circuit(inputs, weights):
     for i in range(N_QUBITS):

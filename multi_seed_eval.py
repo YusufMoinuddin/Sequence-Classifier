@@ -79,7 +79,7 @@ print(f"  pos_weight: {pos_weight.item():.4f}")
 # QUANTUM DEVICE — built ONCE, shared across seeds
 # ─────────────────────────────────────────────
 print(f"Initializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
-dev = qml.device("qiskit.aer", wires=N_QUBITS, shots=SHOTS)
+dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
 
 def quantum_circuit(inputs, weights):
     for i in range(N_QUBITS):

@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 N_QUBITS    = 4      # number of qubits; 4 is a good starting point for 8-mer sequences
 N_LAYERS    = 2      # number of ansatz repetition layers (more = more expressive, slower)
 N_EPOCHS    = 30     # number of training epochs
-BATCH_SIZE  = 32     # samples per gradient update
+BATCH_SIZE  = 128     # samples per gradient update
 LR          = 0.01   # learning rate for Adam optimizer
 SHOTS       = 256    # number of circuit measurement shots (higher = less noise, slower)
 
@@ -95,7 +95,7 @@ print(f"\nInitializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
 
 # Use Qiskit Aer as the simulation backend via the PennyLane-Qiskit bridge
 #dev = qml.device("default.qubit", wires=N_QUBITS, shots=SHOTS)
-dev = qml.device("qiskit.aer", wires=N_QUBITS, shots=SHOTS)
+dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
 
 
 # ─────────────────────────────────────────────

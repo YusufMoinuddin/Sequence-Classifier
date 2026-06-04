@@ -31,7 +31,7 @@ from sklearn.metrics import (
 # ─────────────────────────────────────────────
 SMOKE_TEST = False   # ← flip to False for real run
 
-SEEDS      = [0, 1] if SMOKE_TEST else [0, 1, 2, 3, 4]
+SEEDS      = [0, 1] if SMOKE_TEST else [0, 1, 2]
 N_QUBITS   = 4
 N_LAYERS   = 2
 N_EPOCHS   = 3   if SMOKE_TEST else 30
@@ -79,7 +79,7 @@ print(f"  pos_weight: {POS_WEIGHT.item():.4f}")
 # QUANTUM DEVICE — built ONCE
 # ─────────────────────────────────────────────
 print(f"Initializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
-dev = qml.device("qiskit.aer", wires=N_QUBITS, shots=SHOTS)
+dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
 
 def quantum_circuit(inputs, weights):
     for i in range(N_QUBITS):
