@@ -1,0 +1,461 @@
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Thu May 28 17:51:30 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Thu May 28 17:51:30 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Thu May 28 17:57:49 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Thu May 28 17:57:49 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Fri May 29 10:39:17 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Fri May 29 10:39:17 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 256 shots)...
+
+Training VQC for 30 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/home/Sequence Classifier/qml_classifier.py", line 219, in <module>
+    loss.backward()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/_tensor.py", line 647, in backward
+    torch.autograd.backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/graph.py", line 829, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/function.py", line 311, in apply
+    return user_fn(self, *args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 101, in new_backward
+    grad_inputs = orig_bw(ctx, *grad_outputs)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 186, in backward
+    vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/jacobian_products.py", line 304, in compute_vjp
+    vjp_results = self._inner_execute(tuple(vjp_tapes))
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/execution.py", line 212, in inner_execute
+    results = device.execute(transformed_tapes, execution_config=execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/modifiers/single_tape_support.py", line 32, in execute
+    results = batch_execute(self, circuits, execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/legacy_facade.py", line 456, in execute
+    results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 446, in batch_execute
+    compiled_circuits = self.compile_circuits(circuits)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 437, in compile_circuits
+    compiled_circ = self.compile()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 345, in compile
+    compiled_circuits = transpile(self._circuit, backend=compile_backend, **self.transpile_args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/compiler/transpiler.py", line 366, in transpile
+    pm = generate_preset_pass_manager(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 282, in generate_preset_pass_manager
+    basis_gates, name_mapping, _skip_target = _parse_basis_gates(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in _parse_basis_gates
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in <dictcomp>
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit_aer/backends/aerbackend.py", line 262, in target
+    qiskit_inst_mapping = get_standard_gate_name_mapping()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/library/standard_gates/__init__.py", line 84, in get_standard_gate_name_mapping
+    CU1Gate(lambda_),
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/library/standard_gates/u1.py", line 231, in __init__
+    base_gate=U1Gate(theta, label=_base_label),
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/library/standard_gates/u1.py", line 102, in __init__
+    super().__init__("u1", 1, [theta], label=label, duration=duration, unit=unit)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/gate.py", line 28, in __init__
+    def __init__(
+KeyboardInterrupt
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Fri May 29 10:41:51 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Fri May 29 10:41:51 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 256 shots)...
+
+Training VQC for 30 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/home/Sequence Classifier/qml_classifier.py", line 219, in <module>
+    loss.backward()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/_tensor.py", line 647, in backward
+    torch.autograd.backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/graph.py", line 829, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/function.py", line 311, in apply
+    return user_fn(self, *args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 101, in new_backward
+    grad_inputs = orig_bw(ctx, *grad_outputs)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 186, in backward
+    vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/jacobian_products.py", line 304, in compute_vjp
+    vjp_results = self._inner_execute(tuple(vjp_tapes))
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/execution.py", line 212, in inner_execute
+    results = device.execute(transformed_tapes, execution_config=execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/modifiers/single_tape_support.py", line 32, in execute
+    results = batch_execute(self, circuits, execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/legacy_facade.py", line 456, in execute
+    results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 446, in batch_execute
+    compiled_circuits = self.compile_circuits(circuits)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 437, in compile_circuits
+    compiled_circ = self.compile()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 345, in compile
+    compiled_circuits = transpile(self._circuit, backend=compile_backend, **self.transpile_args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/compiler/transpiler.py", line 366, in transpile
+    pm = generate_preset_pass_manager(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 282, in generate_preset_pass_manager
+    basis_gates, name_mapping, _skip_target = _parse_basis_gates(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in _parse_basis_gates
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in <dictcomp>
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit_aer/backends/aerbackend.py", line 423, in target
+    target.add_instruction(
+KeyboardInterrupt
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Fri May 29 10:42:21 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Fri May 29 10:42:21 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Sat May 30 15:50:32 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run (best-checkpoint saving)
+  Started: Sat May 30 15:50:32 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 256 shots)...
+
+Training VQC for 30 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/home/Sequence Classifier/qml_classifier.py", line 219, in <module>
+    loss.backward()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/_tensor.py", line 647, in backward
+    torch.autograd.backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/graph.py", line 829, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/function.py", line 311, in apply
+    return user_fn(self, *args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 101, in new_backward
+    grad_inputs = orig_bw(ctx, *grad_outputs)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 186, in backward
+    vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/jacobian_products.py", line 304, in compute_vjp
+    vjp_results = self._inner_execute(tuple(vjp_tapes))
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/execution.py", line 212, in inner_execute
+    results = device.execute(transformed_tapes, execution_config=execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/modifiers/single_tape_support.py", line 32, in execute
+    results = batch_execute(self, circuits, execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/legacy_facade.py", line 456, in execute
+    results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 446, in batch_execute
+    compiled_circuits = self.compile_circuits(circuits)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 437, in compile_circuits
+    compiled_circ = self.compile()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 345, in compile
+    compiled_circuits = transpile(self._circuit, backend=compile_backend, **self.transpile_args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/compiler/transpiler.py", line 366, in transpile
+    pm = generate_preset_pass_manager(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 282, in generate_preset_pass_manager
+    basis_gates, name_mapping, _skip_target = _parse_basis_gates(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in _parse_basis_gates
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in <dictcomp>
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit_aer/backends/aerbackend.py", line 251, in target
+    from qiskit.circuit.parameter import Parameter
+KeyboardInterrupt
+========================================================
+  VQC EXPERIMENT SUITE — STARTED
+  Sat May 30 15:52:05 CDT 2026
+========================================================
+
+--------------------------------------------------------
+  STEP 1: Main training run
+  Started: Sat May 30 15:52:05 CDT 2026
+--------------------------------------------------------
+/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 32 shots)...
+
+Training VQC for 3 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/home/Sequence Classifier/qml_classifier.py", line 219, in <module>
+    loss.backward()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/_tensor.py", line 647, in backward
+    torch.autograd.backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/graph.py", line 829, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/torch/autograd/function.py", line 311, in apply
+    return user_fn(self, *args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 101, in new_backward
+    grad_inputs = orig_bw(ctx, *grad_outputs)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/interfaces/torch.py", line 186, in backward
+    vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/jacobian_products.py", line 304, in compute_vjp
+    vjp_results = self._inner_execute(tuple(vjp_tapes))
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/workflow/execution.py", line 212, in inner_execute
+    results = device.execute(transformed_tapes, execution_config=execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/modifiers/single_tape_support.py", line 32, in execute
+    results = batch_execute(self, circuits, execution_config)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane/devices/legacy_facade.py", line 456, in execute
+    results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 446, in batch_execute
+    compiled_circuits = self.compile_circuits(circuits)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 437, in compile_circuits
+    compiled_circ = self.compile()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/pennylane_qiskit/qiskit_device_legacy.py", line 345, in compile
+    compiled_circuits = transpile(self._circuit, backend=compile_backend, **self.transpile_args)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/compiler/transpiler.py", line 366, in transpile
+    pm = generate_preset_pass_manager(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 282, in generate_preset_pass_manager
+    basis_gates, name_mapping, _skip_target = _parse_basis_gates(
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in _parse_basis_gates
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/transpiler/preset_passmanagers/generate_preset_pass_manager.py", line 416, in <dictcomp>
+    {name: backend.target.operation_from_name(name) for name in backend.operation_names}
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit_aer/backends/aerbackend.py", line 262, in target
+    qiskit_inst_mapping = get_standard_gate_name_mapping()
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/library/standard_gates/__init__.py", line 99, in get_standard_gate_name_mapping
+    RZXGate(theta),
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/library/standard_gates/rzx.py", line 130, in __init__
+    super().__init__("rzx", 2, [theta], label=label, duration=duration, unit=unit)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/gate.py", line 46, in __init__
+    super().__init__(name, num_qubits, 0, params, label=label, duration=duration, unit=unit)
+  File "/Users/home/Sequence Classifier/.venv/lib/python3.9/site-packages/qiskit/circuit/instruction.py", line 96, in __init__
+    if not hasattr(self, "_label"):
+KeyboardInterrupt
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 256 shots)...
+
+Training VQC for 30 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+  Epoch 01/30 | Train Loss: 1.2724 | Val Loss: 1.1839 | Val Acc: 0.8301 ★ (new best)
+  Epoch 02/30 | Train Loss: 1.1845 | Val Loss: 1.1454 | Val Acc: 0.7767 ★ (new best)
+  Epoch 03/30 | Train Loss: 1.1566 | Val Loss: 1.1365 | Val Acc: 0.7330 ★ (new best)
+  Epoch 04/30 | Train Loss: 1.1363 | Val Loss: 1.1407 | Val Acc: 0.7184
+  Epoch 05/30 | Train Loss: 1.1254 | Val Loss: 1.1402 | Val Acc: 0.7039
+  Epoch 06/30 | Train Loss: 1.1142 | Val Loss: 1.1227 | Val Acc: 0.7087 ★ (new best)
+  Epoch 07/30 | Train Loss: 1.1036 | Val Loss: 1.1284 | Val Acc: 0.7136
+  Epoch 08/30 | Train Loss: 1.0971 | Val Loss: 1.1301 | Val Acc: 0.7087
+  Epoch 09/30 | Train Loss: 1.1002 | Val Loss: 1.1309 | Val Acc: 0.6505
+  Epoch 10/30 | Train Loss: 1.0893 | Val Loss: 1.1279 | Val Acc: 0.6505
+  Epoch 11/30 | Train Loss: 1.0867 | Val Loss: 1.1210 | Val Acc: 0.6893 ★ (new best)
+  Epoch 12/30 | Train Loss: 1.0882 | Val Loss: 1.1240 | Val Acc: 0.6748
+  Epoch 13/30 | Train Loss: 1.0727 | Val Loss: 1.1134 | Val Acc: 0.6893 ★ (new best)
+  Epoch 14/30 | Train Loss: 1.0722 | Val Loss: 1.1377 | Val Acc: 0.6650
+  Epoch 15/30 | Train Loss: 1.0645 | Val Loss: 1.1231 | Val Acc: 0.6796
+  Epoch 16/30 | Train Loss: 1.0687 | Val Loss: 1.1221 | Val Acc: 0.7136
+  Epoch 17/30 | Train Loss: 1.0661 | Val Loss: 1.1137 | Val Acc: 0.6602
+  Epoch 18/30 | Train Loss: 1.0628 | Val Loss: 1.1385 | Val Acc: 0.6796
+  Epoch 19/30 | Train Loss: 1.0667 | Val Loss: 1.1282 | Val Acc: 0.6602
+  Epoch 20/30 | Train Loss: 1.0538 | Val Loss: 1.1245 | Val Acc: 0.6845
+  Epoch 21/30 | Train Loss: 1.0561 | Val Loss: 1.1360 | Val Acc: 0.6699
+  Epoch 22/30 | Train Loss: 1.0535 | Val Loss: 1.1365 | Val Acc: 0.6893
+  Epoch 23/30 | Train Loss: 1.0486 | Val Loss: 1.1236 | Val Acc: 0.7039
+  Epoch 24/30 | Train Loss: 1.0572 | Val Loss: 1.1190 | Val Acc: 0.6311
+  Epoch 25/30 | Train Loss: 1.0514 | Val Loss: 1.1415 | Val Acc: 0.6359
+  Epoch 26/30 | Train Loss: 1.0488 | Val Loss: 1.1257 | Val Acc: 0.6262
+  Epoch 27/30 | Train Loss: 1.0481 | Val Loss: 1.1403 | Val Acc: 0.6748
+  Epoch 28/30 | Train Loss: 1.0506 | Val Loss: 1.1413 | Val Acc: 0.6117
+  Epoch 29/30 | Train Loss: 1.0442 | Val Loss: 1.1217 | Val Acc: 0.6408
+  Epoch 30/30 | Train Loss: 1.0525 | Val Loss: 1.1260 | Val Acc: 0.6262
+------------------------------------------------------------
+Training complete. Best checkpoint: epoch 13 (val loss = 1.1134)
+Saved to: best_vqc_checkpoint.pt
+
+Evaluating on test set...
+  Test Accuracy : 0.6763
+  Test AUC      : 0.6581
+  Prediction breakdown: {0.0: 133, 1.0: 74}
+
+Collecting hardware metrics from Qiskit Aer...
+
+  ── Quantum Hardware Metrics ──
+  Qubits used      : 4
+  Total gates      : 37
+  Gate breakdown   : {'ry': 12, 'rx': 8, 'rz': 8, 'cx': 8, 'measure': 4, 'barrier': 1}
+  Avg latency      : 1.11 ms per circuit
+  Throughput       : 904.16 circuits/sec
+  Peak memory      : 0.01 MB
+
+Generating figures...
+  Saved: vqc_loss_curve.png
+  Saved: vqc_roc_curve.png
+
+=======================================================
+  RESULTS SUMMARY
+=======================================================
+  Model        : VQC (4 qubits, 2 layers)
+  Test Accuracy: 0.6763
+  Test AUC     : 0.6581
+  Qubits       : 4
+  Gates        : 37
+  Latency      : 1.11 ms
+  Throughput   : 904.16 circuits/sec
+  Peak Memory  : 0.01 MB
+=======================================================
+Loading data...
+  Train: 1652 samples | Val: 206 | Test: 207
+  Label distribution (train): 3A=1394 | 3B=258
+  Class weight for DNMT3B (positive class): 5.40x
+
+Initializing quantum device (4 qubits, 256 shots)...
+
+Training VQC for 30 epochs...
+  Config: 4 qubits | 2 layers | lr=0.01 | batch=32
+  Best checkpoint will be saved to: best_vqc_checkpoint.pt
+------------------------------------------------------------
+  Epoch 01/30 | Train Loss: 1.1781 | Val Loss: 1.1698 | Val Acc: 0.7524 ★ (new best)
+  Epoch 02/30 | Train Loss: 1.1711 | Val Loss: 1.1668 | Val Acc: 0.6893 ★ (new best)
+  Epoch 03/30 | Train Loss: 1.1608 | Val Loss: 1.1513 | Val Acc: 0.6262 ★ (new best)
+  Epoch 04/30 | Train Loss: 1.1351 | Val Loss: 1.1174 | Val Acc: 0.6505 ★ (new best)
+  Epoch 05/30 | Train Loss: 1.1081 | Val Loss: 1.1218 | Val Acc: 0.6942
+  Epoch 06/30 | Train Loss: 1.0974 | Val Loss: 1.1167 | Val Acc: 0.6796 ★ (new best)
+  Epoch 07/30 | Train Loss: 1.0884 | Val Loss: 1.1105 | Val Acc: 0.6699 ★ (new best)
+  Epoch 08/30 | Train Loss: 1.0881 | Val Loss: 1.1092 | Val Acc: 0.7476 ★ (new best)
+  Epoch 09/30 | Train Loss: 1.0808 | Val Loss: 1.1024 | Val Acc: 0.6990 ★ (new best)
+  Epoch 10/30 | Train Loss: 1.0756 | Val Loss: 1.1122 | Val Acc: 0.6748
+  Epoch 11/30 | Train Loss: 1.0734 | Val Loss: 1.1162 | Val Acc: 0.7282
+  Epoch 12/30 | Train Loss: 1.0687 | Val Loss: 1.1171 | Val Acc: 0.7136
+  Epoch 13/30 | Train Loss: 1.0700 | Val Loss: 1.1119 | Val Acc: 0.6602
+  Epoch 14/30 | Train Loss: 1.0660 | Val Loss: 1.1117 | Val Acc: 0.6505
+  Epoch 15/30 | Train Loss: 1.0635 | Val Loss: 1.1163 | Val Acc: 0.6748
+  Epoch 16/30 | Train Loss: 1.0637 | Val Loss: 1.1211 | Val Acc: 0.6990
+  Epoch 17/30 | Train Loss: 1.0610 | Val Loss: 1.1305 | Val Acc: 0.6748
+  Epoch 18/30 | Train Loss: 1.0647 | Val Loss: 1.1063 | Val Acc: 0.6068
+  Epoch 19/30 | Train Loss: 1.0575 | Val Loss: 1.1206 | Val Acc: 0.6408
+  Epoch 20/30 | Train Loss: 1.0634 | Val Loss: 1.1223 | Val Acc: 0.6893
+  Epoch 21/30 | Train Loss: 1.0606 | Val Loss: 1.1237 | Val Acc: 0.6505
+  Epoch 22/30 | Train Loss: 1.0594 | Val Loss: 1.1219 | Val Acc: 0.6456
+  Epoch 23/30 | Train Loss: 1.0570 | Val Loss: 1.1068 | Val Acc: 0.6699
+  Epoch 24/30 | Train Loss: 1.0537 | Val Loss: 1.1093 | Val Acc: 0.6845
+  Epoch 25/30 | Train Loss: 1.0513 | Val Loss: 1.1169 | Val Acc: 0.6699
+  Epoch 26/30 | Train Loss: 1.0539 | Val Loss: 1.1054 | Val Acc: 0.6262
+  Epoch 27/30 | Train Loss: 1.0468 | Val Loss: 1.1228 | Val Acc: 0.6505
+  Epoch 28/30 | Train Loss: 1.0507 | Val Loss: 1.1501 | Val Acc: 0.6359
+  Epoch 29/30 | Train Loss: 1.0580 | Val Loss: 1.1267 | Val Acc: 0.6699
+  Epoch 30/30 | Train Loss: 1.0494 | Val Loss: 1.1302 | Val Acc: 0.6505
+------------------------------------------------------------
+Training complete. Best checkpoint: epoch 9 (val loss = 1.1024)
+Saved to: best_vqc_checkpoint.pt
+
+Evaluating on test set...
+  Test Accuracy : 0.6329
+  Test AUC      : 0.6128
+  Prediction breakdown: {0.0: 140, 1.0: 67}
+
+Collecting hardware metrics from Qiskit Aer...
+
+  ── Quantum Hardware Metrics ──
+  Qubits used      : 4
+  Total gates      : 37
+  Gate breakdown   : {'ry': 12, 'rx': 8, 'rz': 8, 'cx': 8, 'measure': 4, 'barrier': 1}
+  Avg latency      : 0.99 ms per circuit
+  Throughput       : 1013.23 circuits/sec
+  Peak memory      : 0.01 MB
+
+Generating figures...
+  Saved: vqc_loss_curve.png
+  Saved: vqc_roc_curve.png
+
+=======================================================
+  RESULTS SUMMARY
+=======================================================
+  Model        : VQC (4 qubits, 2 layers)
+  Test Accuracy: 0.6329
+  Test AUC     : 0.6128
+  Qubits       : 4
+  Gates        : 37
+  Latency      : 0.99 ms
+  Throughput   : 1013.23 circuits/sec
+  Peak Memory  : 0.01 MB
+=======================================================
+
+  Step 1 complete: Sun May 31 04:15:44 CDT 2026
+run_all_experiments.sh: line 61: unexpected EOF while looking for matching `"'
+run_all_experiments.sh: line 62: syntax error: unexpected end of file

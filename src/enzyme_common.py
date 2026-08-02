@@ -8,7 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 BASES = "ACGT"
 
-from src.qm_features import QM_COLUMNS
+from src.qm_features import QM_COLUMNS, fit_qm_scaler, apply_qm_scaler
 
 
 def one_hot_seq(seq: str, expected_len: int = 8) -> np.ndarray:
@@ -30,8 +30,8 @@ class EnzDataset(Dataset):
     If use_qm=False: returns (x_onehot, y)
     If use_qm=True : returns (x_onehot, qm_feats, y)
 
-    QM normalization:
-      - If qm_norm is provided: qm = (qm - mean) / (std + eps)
+    QM handling:
+      - If qm_scaled is provided: uses pre-scaled values
       - Else: leaves raw qm values as-is
     """
     def __init__(
@@ -39,8 +39,7 @@ class EnzDataset(Dataset):
         df: pd.DataFrame,
         expected_len: int = 8,
         use_qm: bool = False,
-        qm_norm: Optional[Tuple[np.ndarray, np.ndarray]] = None,  # (mean, std)
-        qm_eps: float = 1e-6,
+        qm_scaled: Optional[np.ndarray] = None,
     ):
         # --- sequence column detection ---
         if "sequence" in df.columns:
@@ -87,8 +86,15 @@ class EnzDataset(Dataset):
                     f"Available columns: {list(df.columns)}"
                 )
 
-            # Pull QM matrix
-            qm_vals = df[QM_COLUMNS].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=np.float32)
+            # Pull QM matrix (or use pre-scaled matrix from train-fitted scaler)
+            if qm_scaled is not None:
+                qm_vals = np.asarray(qm_scaled, dtype=np.float32)
+                if qm_vals.shape != (len(df), len(QM_COLUMNS)):
+                    raise ValueError(
+                        f"qm_scaled must have shape ({len(df)}, {len(QM_COLUMNS)}), got {qm_vals.shape}."
+                    )
+            else:
+                qm_vals = df[QM_COLUMNS].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=np.float32)
 
             # Require finite values (now that you're using real raw QM, this should pass)
             finite_mask = np.isfinite(qm_vals).all(axis=1)
@@ -109,13 +115,6 @@ class EnzDataset(Dataset):
                 self.y = self.y[finite_mask]
                 self.seqs = list(np.array(self.seqs, dtype=object)[finite_mask])
 
-            # Normalize using provided train stats (no leakage)
-            if qm_norm is not None:
-                mean, std = qm_norm
-                mean = mean.astype(np.float32)
-                std = std.astype(np.float32)
-                qm_vals = (qm_vals - mean) / (std + qm_eps)
-
             self.qm = qm_vals.astype(np.float32)
 
         if len(self.y) == 0:
@@ -135,25 +134,6 @@ class EnzDataset(Dataset):
         return x_i, y_i
 
 
-def _compute_qm_norm_from_train_df(train_df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-    """Compute (mean, std) for QM columns from TRAIN split only."""
-    missing = [c for c in QM_COLUMNS if c not in train_df.columns]
-    if missing:
-        raise ValueError(f"Train CSV missing QM columns: {missing}")
-
-    qm = train_df[QM_COLUMNS].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=np.float32)
-    if not np.isfinite(qm).any():
-        raise ValueError("Train QM matrix has no finite values.")
-    # Use only finite rows for stats
-    mask = np.isfinite(qm).all(axis=1)
-    qm = qm[mask]
-    mean = qm.mean(axis=0)
-    std = qm.std(axis=0)
-    # Avoid zero std
-    std = np.where(std > 0, std, 1.0).astype(np.float32)
-    return mean.astype(np.float32), std.astype(np.float32)
-
-
 def load_splits(
     train_csv: str,
     val_csv: str,
@@ -166,13 +146,18 @@ def load_splits(
     val_df = pd.read_csv(val_csv)
     test_df = pd.read_csv(test_csv)
 
-    qm_norm = None
+    qm_train_scaled = None
+    qm_val_scaled = None
+    qm_test_scaled = None
     if use_qm:
-        qm_norm = _compute_qm_norm_from_train_df(train_df)
+        scaler = fit_qm_scaler(train_df)
+        qm_train_scaled = apply_qm_scaler(train_df, scaler)
+        qm_val_scaled = apply_qm_scaler(val_df, scaler)
+        qm_test_scaled = apply_qm_scaler(test_df, scaler)
 
-    train_ds = EnzDataset(train_df, expected_len=seq_len, use_qm=use_qm, qm_norm=qm_norm)
-    val_ds = EnzDataset(val_df, expected_len=seq_len, use_qm=use_qm, qm_norm=qm_norm)
-    test_ds = EnzDataset(test_df, expected_len=seq_len, use_qm=use_qm, qm_norm=qm_norm)
+    train_ds = EnzDataset(train_df, expected_len=seq_len, use_qm=use_qm, qm_scaled=qm_train_scaled)
+    val_ds = EnzDataset(val_df, expected_len=seq_len, use_qm=use_qm, qm_scaled=qm_val_scaled)
+    test_ds = EnzDataset(test_df, expected_len=seq_len, use_qm=use_qm, qm_scaled=qm_test_scaled)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
