@@ -1,0 +1,32 @@
+==============================================================================================
+  CLASSICAL BASELINES vs VQC — TEST SET (FULL RUN)
+  Seeds: [0, 1, 2, 3, 4] | threshold=0.5 | mean +/- std over seeds
+  Data: 1652 train / 206 val / 207 test | imbalance 5.39:1 | features: sequence only
+==============================================================================================
+
+  Model                  Balanced Acc        ROC-AUC         PR-AUC  DNMT3B Recall      DNMT3B F1
+  -----------------------------------------------------------------------------------------------
+  SVM (RBF)             0.8145±0.0067  0.9521±0.0002  0.8534±0.0001  0.6485±0.0166  0.7404±0.0049
+  Random Forest         0.7562±0.0168  0.9470±0.0020  0.8164±0.0073  0.5273±0.0346  0.6561±0.0274
+  1D CNN                0.8825±0.0263  0.9616±0.0067  0.8500±0.0145  0.8788±0.0479  0.7095±0.0380
+  VQC (quantum)         0.6252±0.0298  0.6574±0.0078  0.2950±0.0212  0.5091±0.0813  0.3542±0.0334
+  Majority baseline     0.5000±0.0000  0.5000±0.0000  0.1594±0.0000  0.0000±0.0000  0.0000±0.0000
+
+  Positive class = DNMT3B. Class weighting: SVM/RF class_weight='balanced';
+  CNN BCEWithLogitsLoss(pos_weight=5.4031); VQC pos_weight identical.
+  NOTE: the VQC consumes only the first 4 of 8 nucleotides (N_QUBITS=4);
+  the classical baselines see all 8 positions.
+==============================================================================================
+
+% ---- LaTeX (paste into the paper) ----
+\begin{tabular}{lccccc}
+\hline
+Model & Balanced Acc & ROC-AUC & PR-AUC & DNMT3B Recall & DNMT3B F1 \\
+\hline
+SVM (RBF) & $0.814 \pm 0.007$ & $0.952 \pm 0.000$ & $0.853 \pm 0.000$ & $0.648 \pm 0.017$ & $0.740 \pm 0.005$ \\
+Random Forest & $0.756 \pm 0.017$ & $0.947 \pm 0.002$ & $0.816 \pm 0.007$ & $0.527 \pm 0.035$ & $0.656 \pm 0.027$ \\
+1D CNN & $0.882 \pm 0.026$ & $0.962 \pm 0.007$ & $0.850 \pm 0.015$ & $0.879 \pm 0.048$ & $0.709 \pm 0.038$ \\
+VQC (quantum) & $0.625 \pm 0.030$ & $0.657 \pm 0.008$ & $0.295 \pm 0.021$ & $0.509 \pm 0.081$ & $0.354 \pm 0.033$ \\
+Majority baseline & $0.500 \pm 0.000$ & $0.500 \pm 0.000$ & $0.159 \pm 0.000$ & $0.000 \pm 0.000$ & $0.000 \pm 0.000$ \\
+\hline
+\end{tabular}
