@@ -223,3 +223,105 @@ def eval_accuracy_and_confmat(model, loader, loss_fn, device="cpu", model_type="
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
 
     return avg_loss, acc, conf, auc, f1
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Classical-baseline helpers (added for the SVM / RF / CNN benchmark).
+# These are additive: nothing above this line is modified.
+# ─────────────────────────────────────────────────────────────────────────────
+
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    average_precision_score,
+)
+
+# The only two columns the classical baselines are allowed to see. Everything
+# else in the qmproxy CSVs is either a QM-proxy feature (out of scope for this
+# comparison) or label-derived and therefore leaky: meth_A / meth_B / total are
+# the raw methylation counts the label is computed from, label_str is a 1:1
+# alias of label, and key embeds label_str verbatim.
+SEQ_LABEL_COLUMNS = ["sequence", "label"]
+
+
+def load_seq_label(csv_path: str, expected_len: int = 8):
+    """
+    Load a split using ONLY the 'sequence' and 'label' columns.
+
+    Every other column (QM-proxy energies/gradients, and the label-derived
+    meth_A/meth_B/total/label_str/key) is dropped before any encoding happens,
+    so it cannot leak into the features.
+
+    Returns:
+        x       : (N, 4, L) float32 one-hot, via the existing one_hot_seq()
+        y       : (N,) int64 labels in {0, 1}
+        n_neg   : count of DNMT3A (label 0)
+        n_pos   : count of DNMT3B (label 1)
+    """
+    df = pd.read_csv(csv_path)
+
+    missing = [c for c in SEQ_LABEL_COLUMNS if c not in df.columns]
+    if missing:
+        raise ValueError(f"{csv_path} is missing required columns: {missing}")
+
+    df = df[SEQ_LABEL_COLUMNS].copy()
+
+    if df["sequence"].isna().any() or df["label"].isna().any():
+        raise ValueError(f"{csv_path} contains NaNs in 'sequence' or 'label'.")
+
+    seqs = df["sequence"].astype(str).tolist()
+    x = np.stack([one_hot_seq(s, expected_len=expected_len) for s in seqs]).astype(np.float32)
+
+    y = df["label"].to_numpy()
+    if y.dtype == object:
+        y = pd.Series(y).map({"DNMT3A": 0, "DNMT3B": 1}).to_numpy()
+    y = y.astype(np.int64)
+
+    bad = set(np.unique(y)) - {0, 1}
+    if bad:
+        raise ValueError(f"{csv_path} has unexpected label values: {sorted(bad)}")
+
+    n_neg = int((y == 0).sum())
+    n_pos = int((y == 1).sum())
+    return x, y, n_neg, n_pos
+
+
+def flatten_onehot(x: np.ndarray) -> np.ndarray:
+    """(N, 4, L) one-hot -> (N, 4*L) flat features for sklearn estimators."""
+    return x.reshape(len(x), -1)
+
+
+def full_binary_metrics(y_true, y_prob, threshold: float = 0.5) -> dict:
+    """
+    Full metric suite for a binary classifier, computed exactly the way
+    evaluate_metrics.py computes them for the VQC, so classical and quantum
+    numbers are directly comparable.
+
+    Positive class (1) is DNMT3B.
+    """
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob, dtype=float)
+    y_pred = (y_prob >= threshold).astype(int)
+
+    both_classes = len(np.unique(y_true)) == 2
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    tn, fp, fn, tp = cm.ravel()
+
+    return {
+        "accuracy": accuracy_score(y_true, y_pred),
+        "balanced_acc": balanced_accuracy_score(y_true, y_pred),
+        "roc_auc": roc_auc_score(y_true, y_prob) if both_classes else float("nan"),
+        "pr_auc": average_precision_score(y_true, y_prob) if both_classes else float("nan"),
+        "precision_dnmt3b": precision_score(y_true, y_pred, pos_label=1, zero_division=0),
+        "recall_dnmt3b": recall_score(y_true, y_pred, pos_label=1, zero_division=0),
+        "f1_dnmt3b": f1_score(y_true, y_pred, pos_label=1, zero_division=0),
+        "f1_macro": f1_score(y_true, y_pred, average="macro", zero_division=0),
+        "TP": int(tp),
+        "TN": int(tn),
+        "FP": int(fp),
+        "FN": int(fn),
+    }

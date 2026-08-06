@@ -4,12 +4,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT))
 
-# scripts/train_svm.py
+# scripts/train_rf.py
 #
-# Single-run debugging entry point for the SVM baseline.
+# Single-run debugging entry point for the Random Forest baseline.
 # Paper numbers come from benchmark_classical.py (5 seeds, mean +/- std).
 from src.enzyme_common import load_seq_label, flatten_onehot, full_binary_metrics
-from models.svm_classifier import build_svm
+from models.rf_classifier import build_rf
 
 TRAIN_PATH = "data/deep_enzymology_qmproxy_train.csv"
 VAL_PATH = "data/deep_enzymology_qmproxy_val.csv"
@@ -42,7 +42,7 @@ def main():
     X_val, y_val = dataset_to_xy(VAL_PATH, seq_len=seq_len)
     X_test, y_test = dataset_to_xy(TEST_PATH, seq_len=seq_len)
 
-    clf = build_svm(random_state=SEED)
+    clf = build_rf(random_state=SEED)
     clf.fit(X_train, y_train)
 
     report("VAL ", y_val, clf.predict_proba(X_val)[:, 1])
