@@ -52,50 +52,49 @@ from sklearn.metrics import (
 # ─────────────────────────────────────────────
 # CONFIGURATION — must match qml_classifier.py
 # ─────────────────────────────────────────────
-N_QUBITS        = 4
-N_LAYERS        = 2
-SHOTS           = 256
+import sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent
+sys.path.append(str(ROOT))
+
+from src.qml_encodings import n_qubits_for, CONFIG_DESCRIPTIONS
+from src.vqc_common import (
+    parse_known, resolve_encoding, resolve_device,
+    load_data, make_device, make_circuit, weight_shape_for, tag_path,
+)
+
+_args = parse_known("VQC full metrics report")
+ENCODING = resolve_encoding(_args)
+DEVICE = resolve_device(_args, default="qiskit.aer")   # this script's original device
+
+N_QUBITS        = n_qubits_for(ENCODING)      # 4 / 4 / 8, never hardcoded
+N_LAYERS        = _args.layers if _args.layers is not None else 2
+SHOTS           = _args.shots if _args.shots is not None else 256
 TEST_PATH       = "data/deep_enzymology_qmproxy_test.csv"
-CHECKPOINT_PATH = "best_vqc_checkpoint.pt"
+# Prefer the encoding-tagged checkpoint; fall back to the legacy untagged file so
+# existing Config 1 checkpoints keep working.
+CHECKPOINT_PATH = tag_path("best_vqc_checkpoint.pt", ENCODING)
+if not Path(CHECKPOINT_PATH).exists() and Path("best_vqc_checkpoint.pt").exists():
+    CHECKPOINT_PATH = "best_vqc_checkpoint.pt"
+
+CM_FIG  = tag_path("metrics_confusion_matrix.png", ENCODING)
+CURVE_FIG = tag_path("metrics_roc_pr_curves.png", ENCODING)
+
+print(f"Encoding: {ENCODING} — {CONFIG_DESCRIPTIONS[ENCODING]}")
+print(f"Device: {DEVICE} | Qubits: {N_QUBITS} | Layers: {N_LAYERS}")
 
 # ─────────────────────────────────────────────
 # STEP 1: REBUILD MODEL (identical to training)
 # ─────────────────────────────────────────────
-NUC_MAP = {'A': 0, 'T': 1, 'G': 2, 'C': 3}
-
-def encode_sequence(seq):
-    ints = np.array([NUC_MAP[c] for c in seq], dtype=np.float32)
-    return ints * (np.pi / 3.0)
-
-def load_data(path):
-    df = pd.read_csv(path)
-    X = np.stack([encode_sequence(seq) for seq in df['sequence']])
-    y = df['label'].values.astype(np.float32)
-    return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-
 print("Loading test data...")
-X_test, y_test = load_data(TEST_PATH)
+X_test, y_test = load_data(TEST_PATH, ENCODING)
 print(f"  Test set: {X_test.shape[0]} samples")
 print(f"  Label distribution: 3A={int((y_test==0).sum())} | 3B={int((y_test==1).sum())}")
 
 # Rebuild device and circuit (must match training exactly)
-dev = qml.device("qiskit.aer", wires=N_QUBITS, shots=SHOTS)
-
-def quantum_circuit(inputs, weights):
-    for i in range(N_QUBITS):
-        qml.RY(inputs[i], wires=i)
-    for layer in range(N_LAYERS):
-        for i in range(N_QUBITS):
-            qml.RX(weights[layer, i, 0], wires=i)
-            qml.RY(weights[layer, i, 1], wires=i)
-            qml.RZ(weights[layer, i, 2], wires=i)
-        for i in range(N_QUBITS - 1):
-            qml.CNOT(wires=[i, i + 1])
-        qml.CNOT(wires=[N_QUBITS - 1, 0])
-    return qml.expval(qml.PauliZ(0))
-
-circuit_node = qml.QNode(quantum_circuit, dev, interface="torch")
-weight_shape = {"weights": (N_LAYERS, N_QUBITS, 3)}
+dev = make_device(DEVICE, N_QUBITS, SHOTS)
+circuit_node = make_circuit(dev, n_qubits=N_QUBITS, n_layers=N_LAYERS)
+weight_shape = weight_shape_for(N_LAYERS, N_QUBITS)
 vqc_layer    = qml.qnn.TorchLayer(circuit_node, weight_shape)
 
 class VQCClassifier(nn.Module):
@@ -105,8 +104,8 @@ class VQCClassifier(nn.Module):
         self.fc  = nn.Linear(1, 1)
 
     def forward(self, x):
-        x_qubits = x[:, :N_QUBITS]
-        out = torch.stack([self.vqc(x_qubits[i]) for i in range(x_qubits.shape[0])])
+        # x already arrives at circuit width from the encoder — no slice needed.
+        out = torch.stack([self.vqc(x[i]) for i in range(x.shape[0])])
         out = out.unsqueeze(1)
         out = self.fc(out)
         return out.squeeze(1)
@@ -236,9 +235,9 @@ ax.set_ylabel("True Label")
 ax.set_xlabel("Predicted Label")
 ax.set_title(f"VQC Confusion Matrix (Test Set)\nAcc={acc:.3f} | Bal.Acc={bal_acc:.3f}")
 plt.tight_layout()
-plt.savefig("metrics_confusion_matrix.png", dpi=150)
+plt.savefig(CM_FIG, dpi=150)
 plt.close()
-print("  Saved: metrics_confusion_matrix.png")
+print(f"  Saved: {CM_FIG}")
 
 # ── Figure 2: ROC + PR curves side by side ────
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 5))
@@ -271,8 +270,8 @@ ax2.grid(alpha=0.3)
 
 plt.suptitle("VQC Classifier — Test Set Curves", fontsize=13, fontweight='bold')
 plt.tight_layout()
-plt.savefig("metrics_roc_pr_curves.png", dpi=150)
+plt.savefig(CURVE_FIG, dpi=150)
 plt.close()
-print("  Saved: metrics_roc_pr_curves.png")
+print(f"  Saved: {CURVE_FIG}")
 
 print("\nDone. All metrics computed from best checkpoint weights.")

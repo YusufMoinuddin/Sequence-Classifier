@@ -1,0 +1,45 @@
+# requirements-lambda.txt
+# ============================================================================
+# Pinned environment for the Lambda Labs On-Demand instance (Ubuntu, Python 3.10+).
+#
+# Versions are pinned to EXACTLY what the corrected pipeline was developed and
+# verified against locally. Do not float them: the Config 1 bit-for-bit
+# reproducibility baseline was established on these versions, and PennyLane
+# changes gradient/device resolution between minor releases.
+#
+#   pip install -r requirements-lambda.txt
+#
+# CPU-only by design. These circuits are 4-8 qubits (state vector <= 256
+# amplitudes); local benchmarking showed lightning.qubit beating default.qubit
+# 3-4x, and GPU kernel-launch overhead per circuit is expected to dominate at
+# this size. Choose the instance for vCPU count and run many processes in
+# parallel. See the optional GPU block at the bottom.
+# ============================================================================
+
+# --- quantum ---
+pennylane==0.38.0
+pennylane-lightning==0.38.0        # provides the lightning.qubit CPU device
+
+# --- ML / numerics ---
+torch==2.8.0
+scikit-learn==1.6.1
+numpy==1.26.4                      # MUST stay <2: torch 2.8 and PennyLane 0.38
+                                   # here are built against the 1.x ABI
+pandas==2.3.3
+
+# --- plotting (aggregate_vqc_results.py, sanity_checks.py, evaluate_metrics.py) ---
+matplotlib==3.9.4
+
+
+# ============================================================================
+# OPTIONAL — GPU simulator. Install ONLY if benchmark_devices.py on the
+# instance shows lightning.gpu actually beating lightning.qubit.
+#
+# Requires an NVIDIA GPU and pulls in cuQuantum (a large download). The
+# version MUST match pennylane above.
+#
+#   pip install pennylane-lightning-gpu==0.38.0 custatevec-cu12
+#
+# Then re-run:  python benchmark_devices.py
+# and pass --device lightning.gpu only if it wins.
+# ============================================================================

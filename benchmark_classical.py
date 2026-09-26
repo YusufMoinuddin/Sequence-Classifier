@@ -67,7 +67,13 @@ TRAIN_PATH = "data/deep_enzymology_qmproxy_train.csv"
 VAL_PATH   = "data/deep_enzymology_qmproxy_val.csv"
 TEST_PATH  = "data/deep_enzymology_qmproxy_test.csv"
 
-VQC_RESULTS_CSV = "multi_seed_results.csv"
+# Prefer the encoding-tagged Config 1 results if a re-run has produced them; otherwise
+# fall back to the legacy untagged file, which holds the numbers currently in the paper.
+VQC_RESULTS_CANDIDATES = ["multi_seed_results_config1.csv", "multi_seed_results.csv"]
+VQC_RESULTS_CSV = next(
+    (n for n in VQC_RESULTS_CANDIDATES if (ROOT / n).exists()),
+    VQC_RESULTS_CANDIDATES[-1],
+)
 
 OUTPUT_CSV = "classical_baseline_results.csv"
 OUTPUT_TXT = "classical_baseline_summary.txt"

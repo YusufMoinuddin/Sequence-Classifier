@@ -11,7 +11,13 @@ Set to False for the real run.
 """
 
 import random
+import sys
 import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+sys.path.append(str(ROOT))
+
 import numpy as np
 import pandas as pd
 import torch
@@ -27,48 +33,56 @@ from sklearn.metrics import (
     roc_auc_score, average_precision_score, confusion_matrix,
 )
 
+from src.qml_encodings import n_qubits_for, CONFIG_DESCRIPTIONS
+from src.vqc_common import (
+    parse_known, resolve_encoding, resolve_device, resolve_seeds,
+    load_data, make_device, make_circuit, weight_shape_for, tag_path,
+)
+
 # ─────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────
 SMOKE_TEST = False   # ← flip to False for real run
 
-SEEDS      = [0, 1] if SMOKE_TEST else [0, 1, 2, 3, 4]
-N_QUBITS   = 4
-N_LAYERS   = 2
-N_EPOCHS   = 3   if SMOKE_TEST else 30
+_args = parse_known("Multi-seed VQC evaluation")
+ENCODING = resolve_encoding(_args)
+DEVICE = resolve_device(_args)
+
+SEEDS      = resolve_seeds(_args, default=([0, 1] if SMOKE_TEST else [0, 1, 2, 3, 4]))
+N_QUBITS   = n_qubits_for(ENCODING)          # 4 / 4 / 8, never hardcoded
+N_LAYERS   = _args.layers if _args.layers is not None else 2
+N_EPOCHS   = _args.epochs if _args.epochs is not None else (3 if SMOKE_TEST else 30)
 BATCH_SIZE = 32
 LR         = 0.01
-SHOTS      = 32  if SMOKE_TEST else 256
+SHOTS      = _args.shots if _args.shots is not None else (32 if SMOKE_TEST else 256)
+LIMIT_TRAIN = _args.limit_train
 
 TRAIN_PATH = "data/deep_enzymology_qmproxy_train.csv"
 VAL_PATH   = "data/deep_enzymology_qmproxy_val.csv"
 TEST_PATH  = "data/deep_enzymology_qmproxy_test.csv"
 
-OUTPUT_CSV = "multi_seed_results.csv"
-OUTPUT_TXT = "multi_seed_summary.txt"
-OUTPUT_FIG = "multi_seed_boxplots.png"
+# Tagged per encoding. The legacy untagged multi_seed_results.csv holds the numbers
+# currently in the paper and is never overwritten.
+OUTPUT_CSV = tag_path("multi_seed_results.csv", ENCODING)
+OUTPUT_TXT = tag_path("multi_seed_summary.txt", ENCODING)
+OUTPUT_FIG = tag_path("multi_seed_boxplots.png", ENCODING)
 
-print(f"Mode: {'SMOKE TEST' if SMOKE_TEST else 'FULL RUN'}")
+IS_SMOKE = SMOKE_TEST or _args.smoke
+print(f"Mode: {'SMOKE TEST' if IS_SMOKE else 'FULL RUN'}")
+print(f"Encoding: {ENCODING} — {CONFIG_DESCRIPTIONS[ENCODING]}")
+print(f"Device: {DEVICE} | Qubits: {N_QUBITS} | Layers: {N_LAYERS}")
 print(f"Seeds: {SEEDS} | Epochs: {N_EPOCHS} | Shots: {SHOTS}")
+if LIMIT_TRAIN:
+    print(f"Training set subsampled to {LIMIT_TRAIN} rows (smoke test)")
 
 # ─────────────────────────────────────────────
 # DATA (loaded once)
 # ─────────────────────────────────────────────
-NUC_MAP = {'A': 0, 'T': 1, 'G': 2, 'C': 3}
-
-def encode_sequence(seq):
-    return np.array([NUC_MAP[c] for c in seq], dtype=np.float32) * (np.pi / 3.0)
-
-def load_data(path):
-    df = pd.read_csv(path)
-    X = np.stack([encode_sequence(s) for s in df['sequence']])
-    y = df['label'].values.astype(np.float32)
-    return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-
 print("Loading data...")
-X_train, y_train = load_data(TRAIN_PATH)
-X_val,   y_val   = load_data(VAL_PATH)
-X_test,  y_test  = load_data(TEST_PATH)
+X_train, y_train = load_data(TRAIN_PATH, ENCODING, limit=LIMIT_TRAIN)
+X_val,   y_val   = load_data(VAL_PATH, ENCODING)
+X_test,  y_test  = load_data(TEST_PATH, ENCODING)
+print(f"  X_train: {tuple(X_train.shape)} | X_val: {tuple(X_val.shape)} | X_test: {tuple(X_test.shape)}")
 
 n_neg      = (y_train == 0).sum().item()
 n_pos      = (y_train == 1).sum().item()
@@ -79,23 +93,9 @@ print(f"  pos_weight: {pos_weight.item():.4f}")
 # QUANTUM DEVICE — built ONCE, shared across seeds
 # ─────────────────────────────────────────────
 print(f"Initializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
-dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
-
-def quantum_circuit(inputs, weights):
-    for i in range(N_QUBITS):
-        qml.RY(inputs[i], wires=i)
-    for layer in range(N_LAYERS):
-        for i in range(N_QUBITS):
-            qml.RX(weights[layer, i, 0], wires=i)
-            qml.RY(weights[layer, i, 1], wires=i)
-            qml.RZ(weights[layer, i, 2], wires=i)
-        for i in range(N_QUBITS - 1):
-            qml.CNOT(wires=[i, i + 1])
-        qml.CNOT(wires=[N_QUBITS - 1, 0])
-    return qml.expval(qml.PauliZ(0))
-
-circuit_node = qml.QNode(quantum_circuit, dev, interface="torch")
-weight_shape = {"weights": (N_LAYERS, N_QUBITS, 3)}
+dev = make_device(DEVICE, N_QUBITS, SHOTS)
+circuit_node = make_circuit(dev, n_qubits=N_QUBITS, n_layers=N_LAYERS)
+weight_shape = weight_shape_for(N_LAYERS, N_QUBITS)
 print("Device ready.")
 
 # ─────────────────────────────────────────────
@@ -117,8 +117,8 @@ def run_seed(seed):
             self.vqc = vqc_layer
             self.fc  = nn.Linear(1, 1)
         def forward(self, x):
-            x_q = x[:, :N_QUBITS]
-            out = torch.stack([self.vqc(x_q[i]) for i in range(x_q.shape[0])])
+            # x already arrives at circuit width from the encoder — no slice needed.
+            out = torch.stack([self.vqc(x[i]) for i in range(x.shape[0])])
             return self.fc(out.unsqueeze(1)).squeeze(1)
 
     model     = VQCClassifier()
@@ -163,10 +163,10 @@ def run_seed(seed):
               f"Train: {epoch_loss:.4f} | Val: {val_loss:.4f} | "
               f"Acc: {val_acc:.4f}{marker}")
 
-    torch.save({"seed": seed, "epoch": best_epoch,
+    torch.save({"seed": seed, "epoch": best_epoch, "encoding": ENCODING,
                 "model_state_dict": best_state_dict,
                 "val_loss": best_val_loss},
-               f"checkpoint_seed{seed}.pt")
+               f"checkpoint_{ENCODING}_seed{seed}.pt")
 
     model.load_state_dict(best_state_dict)
     model.eval()
@@ -179,6 +179,7 @@ def run_seed(seed):
     tn, fp, fn, tp = cm.ravel()
 
     return {
+        "encoding":      ENCODING,
         "seed":          seed,
         "best_epoch":    best_epoch,
         "accuracy":      accuracy_score(y_true, preds),
@@ -212,7 +213,7 @@ METRIC_LABELS = {
 
 lines = []
 lines.append("=" * 65)
-lines.append(f"  MULTI-SEED SUMMARY ({'SMOKE TEST' if SMOKE_TEST else 'FULL RUN'})")
+lines.append(f"  MULTI-SEED SUMMARY ({'SMOKE TEST' if IS_SMOKE else 'FULL RUN'})")
 lines.append(f"  Seeds: {SEEDS} | Epochs: {N_EPOCHS} | Shots: {SHOTS}")
 lines.append(f"  Runtime: {elapsed/60:.1f} min")
 lines.append("=" * 65)

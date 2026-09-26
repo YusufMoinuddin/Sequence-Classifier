@@ -11,6 +11,12 @@ SMOKE_TEST = False → 30 epochs, 256 shots
 
 import random
 import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+sys.path.append(str(ROOT))
+
 import numpy as np
 import pandas as pd
 import torch
@@ -27,48 +33,51 @@ from sklearn.metrics import (
     average_precision_score, confusion_matrix,
 )
 
+from src.qml_encodings import n_qubits_for, CONFIG_DESCRIPTIONS
+from src.vqc_common import (
+    parse_known, resolve_encoding, resolve_device,
+    load_data, make_device, make_circuit, weight_shape_for, tag_path, qubit_label,
+)
+
 # ─────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────
 SMOKE_TEST = False   # ← flip to False for real run
 
+_args = parse_known("VQC sanity checks")
+ENCODING = resolve_encoding(_args)
+DEVICE = resolve_device(_args)
+
 SEED       = 0
-N_QUBITS   = 4
-N_LAYERS   = 2
-N_EPOCHS   = 3   if SMOKE_TEST else 30
+N_QUBITS   = n_qubits_for(ENCODING)          # 4 / 4 / 8, never hardcoded
+N_LAYERS   = _args.layers if _args.layers is not None else 2
+N_EPOCHS   = _args.epochs if _args.epochs is not None else (3 if SMOKE_TEST else 30)
 BATCH_SIZE = 32
 LR         = 0.01
-SHOTS      = 32  if SMOKE_TEST else 256
+SHOTS      = _args.shots if _args.shots is not None else (32 if SMOKE_TEST else 256)
+LIMIT_TRAIN = _args.limit_train
 
 TRAIN_PATH      = "data/deep_enzymology_qmproxy_train.csv"
 VAL_PATH        = "data/deep_enzymology_qmproxy_val.csv"
 TEST_PATH       = "data/deep_enzymology_qmproxy_test.csv"
 CHECKPOINT_PATH = "best_vqc_checkpoint.pt"
 
-OUTPUT_TXT = "sanity_checks_summary.txt"
-OUTPUT_FIG = "sanity_feature_ablation.png"
+OUTPUT_TXT = tag_path("sanity_checks_summary.txt", ENCODING)
+OUTPUT_FIG = tag_path("sanity_feature_ablation.png", ENCODING)
 
-print(f"Mode: {'SMOKE TEST' if SMOKE_TEST else 'FULL RUN'}")
+IS_SMOKE = SMOKE_TEST or _args.smoke
+print(f"Mode: {'SMOKE TEST' if IS_SMOKE else 'FULL RUN'}")
+print(f"Encoding: {ENCODING} — {CONFIG_DESCRIPTIONS[ENCODING]}")
+print(f"Device: {DEVICE} | Qubits: {N_QUBITS} | Layers: {N_LAYERS}")
 print(f"Epochs: {N_EPOCHS} | Shots: {SHOTS}")
 
 # ─────────────────────────────────────────────
 # DATA
 # ─────────────────────────────────────────────
-NUC_MAP = {'A': 0, 'T': 1, 'G': 2, 'C': 3}
-
-def encode_sequence(seq):
-    return np.array([NUC_MAP[c] for c in seq], dtype=np.float32) * (np.pi / 3.0)
-
-def load_data(path):
-    df = pd.read_csv(path)
-    X = np.stack([encode_sequence(s) for s in df['sequence']])
-    y = df['label'].values.astype(np.float32)
-    return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-
 print("Loading data...")
-X_train, y_train = load_data(TRAIN_PATH)
-X_val,   y_val   = load_data(VAL_PATH)
-X_test,  y_test  = load_data(TEST_PATH)
+X_train, y_train = load_data(TRAIN_PATH, ENCODING, limit=LIMIT_TRAIN)
+X_val,   y_val   = load_data(VAL_PATH, ENCODING)
+X_test,  y_test  = load_data(TEST_PATH, ENCODING)
 
 n_neg      = (y_train == 0).sum().item()
 n_pos      = (y_train == 1).sum().item()
@@ -83,23 +92,9 @@ maj_baseline   = (y_true == 0).mean()
 # QUANTUM DEVICE — built ONCE
 # ─────────────────────────────────────────────
 print(f"Initializing quantum device ({N_QUBITS} qubits, {SHOTS} shots)...")
-dev = qml.device("lightning.gpu", wires=N_QUBITS, shots=SHOTS)
-
-def quantum_circuit(inputs, weights):
-    for i in range(N_QUBITS):
-        qml.RY(inputs[i], wires=i)
-    for layer in range(N_LAYERS):
-        for i in range(N_QUBITS):
-            qml.RX(weights[layer, i, 0], wires=i)
-            qml.RY(weights[layer, i, 1], wires=i)
-            qml.RZ(weights[layer, i, 2], wires=i)
-        for i in range(N_QUBITS - 1):
-            qml.CNOT(wires=[i, i + 1])
-        qml.CNOT(wires=[N_QUBITS - 1, 0])
-    return qml.expval(qml.PauliZ(0))
-
-circuit_node = qml.QNode(quantum_circuit, dev, interface="torch")
-weight_shape = {"weights": (N_LAYERS, N_QUBITS, 3)}
+dev = make_device(DEVICE, N_QUBITS, SHOTS)
+circuit_node = make_circuit(dev, n_qubits=N_QUBITS, n_layers=N_LAYERS)
+weight_shape = weight_shape_for(N_LAYERS, N_QUBITS)
 print("Device ready.")
 
 # ─────────────────────────────────────────────
@@ -129,8 +124,8 @@ def build_and_train(X_tr, y_tr, X_v, y_v, X_te, y_te, pw, seed, tag):
             self.vqc = vqc_layer
             self.fc  = nn.Linear(1, 1)
         def forward(self, x):
-            x_q = x[:, :N_QUBITS]
-            out = torch.stack([self.vqc(x_q[i]) for i in range(x_q.shape[0])])
+            # x already arrives at circuit width from the encoder — no slice needed.
+            out = torch.stack([self.vqc(x[i]) for i in range(x.shape[0])])
             return self.fc(out.unsqueeze(1)).squeeze(1)
 
     model     = VQCClassifier()
@@ -264,8 +259,8 @@ else:
             self.vqc = vqc_abl
             self.fc  = nn.Linear(1, 1)
         def forward(self, x):
-            x_q = x[:, :N_QUBITS]
-            out = torch.stack([self.vqc(x_q[i]) for i in range(x_q.shape[0])])
+            # x already arrives at circuit width from the encoder — no slice needed.
+            out = torch.stack([self.vqc(x[i]) for i in range(x.shape[0])])
             return self.fc(out.unsqueeze(1)).squeeze(1)
 
     model_abl = VQCAbl()
@@ -282,8 +277,10 @@ else:
     print(f"\n  Baseline — Acc: {base_m['accuracy']:.4f} | "
           f"F1(3B): {base_m['f1_dnmt3b']:.4f} | AUC: {base_m['roc_auc']:.4f}")
 
-    pos_means = X_train[:, :N_QUBITS].mean(dim=0)
-    pos_labels = [f"Pos{i}(N{i+1})" for i in range(N_QUBITS)]
+    pos_means = X_train.mean(dim=0)
+    # Labels come from the encoding: under config2 a qubit is a PAIR of positions,
+    # so the old f"Pos{i}(N{i+1})" would have been wrong.
+    pos_labels = [qubit_label(ENCODING, i) for i in range(N_QUBITS)]
 
     print()
     for pos in range(N_QUBITS):
@@ -337,7 +334,7 @@ METRIC_LABELS = {
 
 lines = []
 lines.append("=" * 70)
-lines.append(f"  SANITY CHECKS SUMMARY ({'SMOKE TEST' if SMOKE_TEST else 'FULL RUN'})")
+lines.append(f"  SANITY CHECKS SUMMARY ({'SMOKE TEST' if IS_SMOKE else 'FULL RUN'})")
 lines.append("=" * 70)
 lines.append(f"\n  {'Check':<22} " +
              " ".join(f"{METRIC_LABELS[c]:>13}" for c in METRIC_COLS))
