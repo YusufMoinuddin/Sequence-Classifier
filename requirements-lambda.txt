@@ -20,6 +20,20 @@
 pennylane==0.38.0
 pennylane-lightning==0.38.0        # provides the lightning.qubit CPU device
 
+# PennyLane 0.38 declares these transitive deps with NO upper bound, so a fresh
+# install picks up newer releases that break it. Pinned to the exact versions the
+# pipeline was verified against.
+#
+# autoray in particular is a HARD requirement: 0.7.x removed autoray.NumpyMimic,
+# which pennylane/math/__init__.py subclasses at import time, so PennyLane fails
+# to import at all with anything newer:
+#     AttributeError: module 'autoray.autoray' has no attribute 'NumpyMimic'
+autoray==0.6.7
+autograd==1.8.0
+scipy==1.13.1
+networkx==3.2.1
+rustworkx==0.17.1
+
 # --- ML / numerics ---
 torch==2.8.0
 scikit-learn==1.6.1

@@ -91,6 +91,17 @@ python - <<'PYEOF'
 import sys
 fails = []
 
+# Check autoray BEFORE importing pennylane. PennyLane 0.38 subclasses
+# autoray.autoray.NumpyMimic at import time; autoray 0.7.x removed it, so the
+# import dies with an opaque AttributeError. Catch it here with a real fix.
+import autoray
+if not autoray.__version__.startswith("0.6"):
+    print(f"  FAIL  autoray {autoray.__version__} is incompatible with PennyLane 0.38")
+    print( "        PennyLane will fail to import (no attribute 'NumpyMimic').")
+    print( "        Fix:  pip install 'autoray==0.6.7'")
+    sys.exit(1)
+print(f"  autoray      {autoray.__version__}")
+
 import pennylane as qml, torch, numpy as np, pandas as pd, sklearn, matplotlib
 print(f"  pennylane    {qml.version()}")
 print(f"  torch        {torch.__version__}")
