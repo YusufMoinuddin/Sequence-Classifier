@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# smoke_lambda.sh — fast end-to-end plumbing check for all three configs.
+# smoke_lambda.sh — fast end-to-end plumbing check for the configs being trained.
 #
 # Runs identically on your Mac (before launching) and on the Lambda instance
 # (right after setup_lambda.sh, before any 30-epoch run).
@@ -32,14 +32,14 @@ cleanup() { rm -rf "$SMOKE_DIR"; }
 trap cleanup EXIT
 
 echo "======================================================================"
-echo "  SMOKE TEST — all three configs"
+echo "  SMOKE TEST — config2 + config3"
 echo "  device : $DEVICE"
 echo "  scratch: $SMOKE_DIR  (deleted on exit)"
 echo "======================================================================"
 
 mkdir -p "$SMOKE_DIR"
 
-for CFG in config1 config2 config3; do
+for CFG in config2 config3; do
     echo ""
     echo "--- $CFG ---"
     OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
@@ -88,6 +88,6 @@ rm -f vqc_all_configs_results.csv vqc_all_configs_summary.txt vqc_confusion_matr
 
 echo ""
 echo "======================================================================"
-echo "  SMOKE TEST PASSED — all 3 configs ran, aggregated, checkpoints load"
+echo "  SMOKE TEST PASSED — config2 + config3 ran, aggregated, checkpoints load"
 echo "  (metrics above are noise by design; scratch dir removed)"
 echo "======================================================================"
