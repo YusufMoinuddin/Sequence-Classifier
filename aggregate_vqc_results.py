@@ -51,9 +51,39 @@ OUT_TXT = "vqc_all_configs_summary.txt"
 OUT_FIG = "vqc_confusion_matrices.png"
 
 
+def load_legacy_config1(path):
+    """
+    Load the previously published Config 1 results as a baseline row, so the
+    comparison table keeps its baseline without re-running the failed encoding.
+
+    multi_seed_results.csv was produced by multi_seed_eval.py at hyperparameters
+    identical to run_single_vqc.py (2 layers / 30 epochs / batch 32 / lr 0.01 /
+    256 shots, seeds 0-4), so the rows are directly comparable. It predates the
+    precision/recall columns, so those are derived from TP/FP/FN here.
+    """
+    d = pd.read_csv(path)
+    required = {"TP", "FP", "FN", "TN", "balanced_acc", "roc_auc", "pr_auc", "f1_dnmt3b"}
+    missing = required - set(d.columns)
+    if missing:
+        raise SystemExit(f"{path} is missing columns needed for the legacy row: {sorted(missing)}")
+
+    d = d.copy()
+    d["encoding"] = "config1"
+    d["recall_dnmt3b"] = d["TP"] / (d["TP"] + d["FN"]).replace(0, np.nan)
+    d["precision_dnmt3b"] = d["TP"] / (d["TP"] + d["FP"]).replace(0, np.nan)
+    d["n_qubits"] = 4
+    d["source"] = "prior run (not re-trained)"
+    return d
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results-dir", default="results")
+    ap.add_argument(
+        "--legacy-config1", default=None, metavar="CSV",
+        help="Add the previously published Config 1 baseline from this CSV "
+             "(e.g. multi_seed_results.csv) instead of re-training it.",
+    )
     args = ap.parse_args()
 
     rdir = Path(args.results_dir)
@@ -61,10 +91,22 @@ def main():
     if not files:
         raise SystemExit(
             f"No per-run CSVs found in {rdir}/ (expected vqc_<encoding>_seed<N>.csv).\n"
-            "Run the Slurm array first, or pass --results-dir."
+            "Run the training commands first, or pass --results-dir."
         )
 
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    df["source"] = "this run"
+
+    if args.legacy_config1:
+        legacy = load_legacy_config1(args.legacy_config1)
+        if "config1" in set(df.encoding):
+            print(f"  NOTE: config1 was also trained in {rdir}/ — using the freshly "
+                  f"trained rows and IGNORING {args.legacy_config1}")
+        else:
+            df = pd.concat([df, legacy], ignore_index=True)
+            print(f"  Added Config 1 baseline from {args.legacy_config1} "
+                  f"({len(legacy)} seeds, prior run, not re-trained)")
+
     df = df.sort_values(["encoding", "seed"]).reset_index(drop=True)
     df.to_csv(OUT_CSV, index=False)
 
@@ -92,13 +134,30 @@ def main():
     lines.append(f"  {'Encoding':<30}" + "".join(f"{lab:>17}" for lab in METRIC_LABELS))
     lines.append("  " + "-" * (30 + 17 * len(METRIC_LABELS)))
 
+    def label_for(enc, sub):
+        """Mark rows that came from a prior run rather than this training batch."""
+        base = ENCODING_LABELS.get(enc, enc)
+        if "source" in sub.columns and (sub["source"] != "this run").all():
+            return base + " *"
+        return base
+
     stats = {}
+    legacy_present = False
     for enc in present:
         sub = df[df.encoding == enc]
         stats[enc] = {m: (sub[m].mean(), sub[m].std(ddof=1) if len(sub) > 1 else 0.0)
                       for m in METRICS}
+        lab = label_for(enc, sub)
+        if lab.endswith(" *"):
+            legacy_present = True
         cells = "".join(f"{stats[enc][m][0]:>9.4f}±{stats[enc][m][1]:<7.4f}" for m in METRICS)
-        lines.append(f"  {ENCODING_LABELS.get(enc, enc):<30}{cells}")
+        lines.append(f"  {lab:<30}{cells}")
+
+    if legacy_present:
+        lines.append("")
+        lines.append("  * from a prior run, not re-trained in this batch. Hyperparameters are")
+        lines.append("    identical (2 layers / 30 epochs / batch 32 / lr 0.01 / 256 shots,")
+        lines.append("    seeds 0-4); DNMT3B recall and precision derived from TP/FP/FN.")
 
     lines.append("")
     lines.append("  Qubits per encoding: config1=4, config2=4, config3=8")
@@ -116,7 +175,7 @@ def main():
         sub = df[df.encoding == enc].sort_values("balanced_acc").reset_index(drop=True)
         row = sub.iloc[len(sub) // 2]
         median_rows[enc] = row
-        lines.append(f"    {ENCODING_LABELS.get(enc, enc)} — seed {int(row.seed)} "
+        lines.append(f"    {label_for(enc, sub)} — seed {int(row.seed)} "
                      f"(balanced acc {row.balanced_acc:.4f})")
         lines.append(f"                          Pred 3A   Pred 3B")
         lines.append(f"      True 3A (DNMT3A)    {int(row.TN):>7}   {int(row.FP):>7}")
@@ -132,7 +191,7 @@ def main():
     lines.append("\\hline")
     for enc in present:
         cells = " & ".join(f"${stats[enc][m][0]:.3f} \\pm {stats[enc][m][1]:.3f}$" for m in METRICS)
-        lines.append(f"{ENCODING_LABELS.get(enc, enc)} & {cells} \\\\")
+        lines.append(f"{label_for(enc, df[df.encoding == enc])} & {cells} \\\\")
     lines.append("\\hline")
     lines.append("\\end{tabular}")
 
@@ -154,7 +213,7 @@ def main():
                 ax.text(j, i, f"{int(cm[i, j])}", ha="center", va="center",
                         color="white" if cm[i, j] > cm.max() / 2 else "black",
                         fontsize=15, fontweight="bold")
-        ax.set_title(f"{ENCODING_LABELS.get(enc, enc)}\n"
+        ax.set_title(f"{label_for(enc, df[df.encoding == enc])}\n"
                      f"median seed {int(r.seed)} | bal acc {r.balanced_acc:.3f}",
                      fontsize=10)
         ax.set_xticks([0, 1], ["Pred 3A", "Pred 3B"])
